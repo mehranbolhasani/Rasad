@@ -1,0 +1,8 @@
+# Rasad — example cron: rebuild site every 15 minutes
+# Install: crontab -e and paste the line below (adjust path and log).
+
+# Every 15 minutes
+*/15 * * * * cd /path/to/Rasad && .venv/bin/python build.py >> /var/log/rasad.log 2>&1
+
+# Or every hour
+# 0 * * * * cd /path/to/Rasad && .venv/bin/python build.py >> /var/log/rasad.log 2>&1

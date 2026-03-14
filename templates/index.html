@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+{% for story in stories %}
+<article>
+  <h2>{{ story.headline }}</h2>
+  <p><small>{% if story.confirmed %}{{ label_confirmed }}{% else %}{{ label_reported }}{% endif %}{% if story.sources|length > 1 %} — {{ story.sources|length }} {{ label_sources }}{% endif %}</small></p>
+  <p>{{ story.summary }}</p>
+  <p><small>{{ label_sources }}: {% for s in story.sources %}<a href="{{ s.url }}" rel="noopener">{{ s.name }}</a>{% if not loop.last %} | {% endif %}{% endfor %}</small></p>
+</article>
+<hr>
+{% endfor %}
+{% endblock %}

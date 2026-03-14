@@ -1,0 +1,153 @@
+# رصد — تنظیمات مرکزی
+# فیدها، کلیدواژه‌ها و تنظیمات را اینجا ویرایش کنید.
+
+site:
+  title: "رصد — اخبار جنگ"
+  description: "اخبار بحران با حداقل حجم. خلاصه‌های معتبر از منابع متعدد. بدون ردیابی."
+  base_url: "https://rasad.example.com"
+
+# فیدهای فارسی (بدون نیاز به ترجمه)
+# فیدهای انگلیسی (ترجمه خودکار با GPT-4o-mini)
+feeds:
+  # --- منابع فارسی ---
+  - name: بی‌بی‌سی فارسی
+    url: "https://feeds.bbci.co.uk/persian/rss.xml"
+    language: fa
+  - name: رادیو فردا
+    url: "https://www.radiofarda.com/api/zrttpol-vomx-tpeoogpi"
+    language: fa
+  - name: رادیو فردا - ایران
+    url: "https://www.radiofarda.com/api/zpoqil-vomx-tpe_kip"
+    language: fa
+  - name: ایران اینترنشنال
+    url: "https://www.iranintl.com/feed"
+    language: fa
+
+  # --- منابع انگلیسی (ترجمه خودکار) ---
+  - name: The Guardian
+    url: "https://www.theguardian.com/world/middleeast/rss"
+    language: en
+  - name: NetBlocks
+    url: "https://netblocks.org/feed"
+    language: en
+
+# منابع غیر RSS که ابتدا به RSS محلی تبدیل می‌شوند.
+bridge_feeds:
+  output_dir: "bridges"
+  sources:
+    - name: Reuters
+      slug: "reuters"
+      type: html
+      url: "https://www.reuters.com/world/iran/"
+      language: en
+      max_items: 40
+      selectors:
+        items: 'article[data-testid="StoryCard"]'
+        title: 'a[data-testid="TitleLink"]'
+        link: 'a[data-testid="TitleLink"]'
+        summary: 'p[data-testid="Body"]'
+        date: 'time[data-testid="DateLine"]'
+
+    - name: "AP Live"
+      slug: "ap-live"
+      type: html
+      url: "https://apnews.com/live/iran-war-israel-trump-03-14-2026"
+      language: en
+      max_items: 60
+      selectors:
+        items: 'div[data-key], article, div[class*="LiveBlogPost"]'
+        title: 'h2[class*="LiveBlogPost-heading"], h2'
+        link: 'a[href]'
+        summary: 'p'
+        date: 'span[data-testid="Timestamp"], time'
+
+    # - name: "Some API"
+    #   slug: "some-api"
+    #   type: json
+    #   url: "https://api.example.com/v1/articles?topic=iran"
+    #   language: en
+    #   max_items: 40
+    #   json_map:
+    #     items: "data.articles"
+    #     title: "headline"
+    #     link: "url"
+    #     summary: "abstract"
+    #     date: "published_at"
+# کلیدواژه‌ها: حداقل یک باید منطبق باشد (عنوان + خلاصه)
+# شامل کلمات فارسی و انگلیسی برای فیلتر هر دو نوع فید
+keywords:
+  - ایران
+  - اسرائیل
+  - آمریکا
+  - حمله
+  - موشک
+  - حمله هوایی
+  - قطعی اینترنت
+  - سپاه
+  - حمله سایبری
+  - تنش
+  - درگیری
+  - غزه
+  - حزب‌الله
+  - تهران
+  - نتانیاهو
+  - Iran
+  - Israel
+  - US
+  - strikes
+  - missiles
+  - airstrike
+  - internet blackout
+  - IRGC
+  - cyber attack
+  - escalation
+  - conflict
+  - Gaza
+  - Hezbollah
+  - Tehran
+  - IDF
+  - Netanyahu
+
+# فیلتر هوشمندتر:
+# 1) حداقل یک کلیدواژه هسته‌ای باید وجود داشته باشد
+# 2) مجموع امتیاز کلیدواژه‌ها باید حداقل 2 باشد
+filtering:
+  min_matches: 2
+  required_keywords:
+    - ایران
+    - تهران
+    - سپاه
+    - تنگه هرمز
+    - Iran
+    - Tehran
+    - IRGC
+    - Hormuz
+    - Kharg
+
+summarization:
+  mode: extractive  # extractive | ai
+  max_sentences: 3
+
+translation:
+  mode: ai  # ai | free | none
+  # ai: نیاز به OPENAI_API_KEY در محیط دارد (GPT-4o-mini، حدود ۲ تا ۴ دلار در ماه)
+  # free: از deep-translator استفاده می‌کند (رایگان اما ممکن است ناپایدار باشد)
+  # none: مقالات انگلیسی بدون ترجمه نمایش داده می‌شوند
+  post_edit: true
+  post_edit_limit: 12  # برای کنترل هزینه، فقط روی بخشی از ترجمه‌ها اعمال می‌شود
+
+fetch:
+  timeout_seconds: 10
+  cache_file: ".rasad_cache.json"
+  max_articles_per_feed: 50
+
+grouper:
+  similarity_threshold: 0.18
+  confirmed_min_sources: 3
+  secondary_title_threshold: 0.14
+  secondary_time_window_hours: 6
+
+output:
+  dir: "output"
+  latest_count: 20
+  archive_pages: true
