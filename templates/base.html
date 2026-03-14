@@ -7,17 +7,19 @@
 <link rel="stylesheet" href="{{ stylesheet_href }}">
 </head>
 <body>
-<h1>{{ site_title }}</h1>
-<p><small>{{ last_updated }}</small></p>
-<nav>
-  <a href="{{ base_url }}/">خانه</a> | <a href="{{ base_url }}/archive/">{{ nav_archive }}</a> | <a href="{{ base_url }}/feed.xml">RSS</a>
-</nav>
-<hr>
-{% block content %}{% endblock %}
-<hr>
-<footer>
-  <p>{{ footer_no_tracking }}</p>
-  <p>{{ footer_mirror }}</p>
-</footer>
+<div class="page">
+  <h1>{{ site_title }}</h1>
+  <p><small>{{ last_updated }}</small></p>
+  <nav>
+    <a href="{{ base_url }}/">خانه</a> | <a href="{{ base_url }}/archive/">{{ nav_archive }}</a> | <a href="{{ base_url }}/feed.xml">RSS</a>
+  </nav>
+  <hr>
+  {% block content %}{% endblock %}
+  <hr>
+  <footer>
+    <p>{{ footer_no_tracking }}</p>
+    <p>{{ footer_mirror }}</p>
+  </footer>
+</div>
 </body>
 </html>

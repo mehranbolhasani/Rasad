@@ -1,11 +1,10 @@
 :root {
     color-scheme: light dark;
-    color: #3e2e2e;
-    background: #FBF6F5;
     --color: #3e2e2e;
     --background: #FBF6F5;
     --link: #c05050;
     --link-visited: #c05050;
+    --line: #e7e4e4;
   }
   
   @media (prefers-color-scheme: dark) {
@@ -14,6 +13,7 @@
       --background: #1A1210;
       --link: #d06050;
       --link-visited: #d06050;
+      --line: #2a2a2a;
     }
   }
   
@@ -30,19 +30,24 @@
   }
   
   body {
-      margin: 0 auto;
-      padding: 1.5rem;
+      margin: 0;
+      padding: 0;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue",sans-serif;
       font-size: 1rem;
       line-height: 1.8;
       color: var(--color);
       background: var(--background);
-      max-width: 600px;
       direction: rtl;
       text-align: right;
       text-rendering: optimizeLegibility;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
+  }
+
+  body > .page {
+      margin: 0 auto;
+      padding: 1.5rem;
+      max-width: 600px;
   }
   
   a {
@@ -86,7 +91,7 @@
   
   hr {
       border: 0;
-      border-top: 1px solid #ccc;
+      border-top: 1px solid var(--line);
       margin: 1rem 0;
   }
   

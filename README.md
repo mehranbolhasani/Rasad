@@ -74,6 +74,30 @@ python build.py --config other.yaml --output ./public
 - **Deploy script:** `./deploy.sh gh-pages` or `RSYNC_DEST=user@host:/path ./deploy.sh rsync`
 - **Cron:** Copy `crontab.example` and adjust the path.
 
+### Nginx (Cloudflare + static origin)
+
+If you deploy on your own Nginx server behind Cloudflare (Full Strict), use the hardened sample config in:
+
+- `nginx-cloudflare-static.conf`
+
+Usage checklist:
+
+1. Replace `server_name` with your domain.
+2. Replace `root` with your deployed `output/` path.
+3. Set `ssl_certificate` and `ssl_certificate_key` to your Cloudflare Origin Certificate files.
+4. Validate and reload:
+
+```bash
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+Notes:
+
+- The config includes strong TLS settings, HSTS, CSP, and common security headers suitable for static sites.
+- Keep your origin reachable only through Cloudflare (firewall allowlist Cloudflare IP ranges).
+- If your origin is publicly reachable directly, review HSTS/preload before enabling in production.
+
 ## Mirroring
 
 The site is fully static. To mirror:
