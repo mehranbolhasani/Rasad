@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <rss version="2.0">
   <channel>
-    <title>AP Live</title>
-    <description>Bridge RSS for AP Live</description>
-    <link>https://apnews.com/live/iran-war-israel-trump-03-14-2026</link>
+    <title>AP Middle East</title>
+    <description>Bridge RSS for AP Middle East</description>
+    <link>https://apnews.com/hub/middle-east</link>
     <language>en</language>
+    <lastBuildDate>Sun, 15 Mar 2026 17:00:02 GMT</lastBuildDate>
   </channel>
 </rss>

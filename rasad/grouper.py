@@ -3,7 +3,7 @@ Group articles that refer to the same event using token overlap (Jaccard similar
 Each group becomes one GroupedStory with merged headline, combined summary, and source list.
 """
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 
 from rasad.models import Article, GroupedStory, SourceRef
 
@@ -97,9 +97,53 @@ def _published_ts(article: Article) -> float | None:
     if article.published is None:
         return None
     try:
-        return article.published.timestamp()
+        published = article.published
+        if published.tzinfo is None:
+            published = published.replace(tzinfo=timezone.utc)
+        return published.timestamp()
     except (AttributeError, OSError):
         return None
+
+
+def _as_utc(dt: datetime) -> datetime:
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
+def _story_ts(story: GroupedStory) -> float:
+    if story.published is None:
+        return 0.0
+    try:
+        return _as_utc(story.published).timestamp()
+    except (AttributeError, OSError):
+        return 0.0
+
+
+def _median_published_for_group(group: list[Article]) -> datetime | None:
+    source_latest_ts: dict[str, float] = {}
+    for article in group:
+        ts = _published_ts(article)
+        if ts is None:
+            continue
+        source_key = (article.source or "").strip() or "__unknown__"
+        prev = source_latest_ts.get(source_key)
+        if prev is None or ts > prev:
+            source_latest_ts[source_key] = ts
+    if not source_latest_ts:
+        return None
+    ordered = sorted(source_latest_ts.values())
+    size = len(ordered)
+    mid = size // 2
+    if size % 2 == 1:
+        median_ts = ordered[mid]
+    else:
+        median_ts = (ordered[mid - 1] + ordered[mid]) / 2.0
+    return datetime.fromtimestamp(median_ts, tz=timezone.utc)
+
+
+def _is_mixed_live_pair(article1: Article, article2: Article) -> bool:
+    return bool(article1.is_live) ^ bool(article2.is_live)
 
 
 def _title_similarity(article1: Article, article2: Article) -> float:
@@ -127,6 +171,10 @@ def group_articles(
     confirmed_min_sources: int = 3,
     secondary_title_threshold: float = 0.14,
     secondary_time_window_hours: int = 6,
+    max_age_hours: int = 72,
+    live_mixed_similarity_threshold: float = 0.6,
+    live_penalty: float = 0.3,
+    source_diversity_bonus_cap: float = 0.15,
 ) -> list[GroupedStory]:
     """
     Cluster articles by similarity. Each cluster becomes one GroupedStory.
@@ -135,6 +183,17 @@ def group_articles(
     """
     if not articles:
         return []
+    now_ts = datetime.now(timezone.utc).timestamp()
+    if max_age_hours > 0:
+        min_ts = now_ts - (max_age_hours * 3600)
+        filtered_articles = []
+        for article in articles:
+            ts = _published_ts(article)
+            if ts is None or ts >= min_ts:
+                filtered_articles.append(article)
+        articles = filtered_articles
+        if not articles:
+            return []
 
     # Build adjacency: for each article, which others are similar enough
     n = len(articles)
@@ -142,10 +201,17 @@ def group_articles(
     for i in range(n):
         similar[i].add(i)
         for j in range(i + 1, n):
+            is_mixed_live_pair = _is_mixed_live_pair(articles[i], articles[j])
+            required_threshold = similarity_threshold
+            if is_mixed_live_pair:
+                required_threshold = max(similarity_threshold, live_mixed_similarity_threshold)
             sim = similarity(articles[i], articles[j])
-            if sim >= similarity_threshold:
+            if sim >= required_threshold:
                 similar[i].add(j)
                 similar[j].add(i)
+                continue
+
+            if is_mixed_live_pair:
                 continue
 
             # Second-pass merge rule:
@@ -194,7 +260,10 @@ def group_articles(
             if a.published is None:
                 return 0.0
             try:
-                return a.published.timestamp()
+                published = a.published
+                if published.tzinfo is None:
+                    published = published.replace(tzinfo=timezone.utc)
+                return published.timestamp()
             except (AttributeError, OSError):
                 return 0.0
         group.sort(key=_sort_key, reverse=True)
@@ -209,10 +278,8 @@ def group_articles(
             if s.url not in seen_urls:
                 seen_urls.add(s.url)
                 unique_sources.append(s)
-        published = first.published
-        for a in group[1:]:
-            if a.published and (published is None or a.published < published):
-                published = a.published
+        # Use median timestamp across unique sources to avoid one live feed pinning top forever.
+        published = _median_published_for_group(group) or first.published
         confirmed = len(unique_sources) >= confirmed_min_sources
         stories.append(
             GroupedStory(
@@ -224,13 +291,37 @@ def group_articles(
             )
         )
 
-    # Sort stories by published date descending
-    def _story_sort_key(s: GroupedStory) -> float:
-        if s.published is None:
-            return 0.0
-        try:
-            return s.published.timestamp()
-        except (AttributeError, OSError):
-            return 0.0
-    stories.sort(key=_story_sort_key, reverse=True)
+    story_meta_by_headline = {
+        story.headline: {
+            "sources_count": len(story.sources),
+            "is_live": bool(story.headline and _normalize_text(story.headline).startswith("آنچه گذشت")),
+        }
+        for story in stories
+    }
+    for indices in components.values():
+        group = [articles[i] for i in indices]
+        if not group:
+            continue
+        first = max(group, key=lambda a: _published_ts(a) or 0.0)
+        if first.title in story_meta_by_headline:
+            story_meta_by_headline[first.title]["is_live"] = bool(first.is_live)
+
+    max_display_hours = float(max(max_age_hours, 1))
+
+    def _story_score(story: GroupedStory) -> tuple[float, float]:
+        published_ts = _story_ts(story)
+        if published_ts <= 0:
+            recency_score = 0.0
+        else:
+            age_hours = max((now_ts - published_ts) / 3600.0, 0.0)
+            recency_score = max(0.0, 1.0 - (age_hours / max_display_hours))
+        meta = story_meta_by_headline.get(story.headline, {})
+        source_count = int(meta.get("sources_count", len(story.sources) or 1))
+        diversity = min(source_count / max(float(confirmed_min_sources), 1.0), 1.0)
+        source_bonus = diversity * source_diversity_bonus_cap
+        story_live_penalty = live_penalty if bool(meta.get("is_live", False)) else 0.0
+        score = recency_score + source_bonus - story_live_penalty
+        return score, published_ts
+
+    stories.sort(key=_story_score, reverse=True)
     return stories

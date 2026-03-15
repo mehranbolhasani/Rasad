@@ -4,7 +4,7 @@
 site:
   title: "رصد — اخبار جنگ"
   description: "اخبار بحران با حداقل حجم. خلاصه‌های معتبر از منابع متعدد. بدون ردیابی."
-  base_url: "https://rasad.example.com"
+  base_url: "https://rasad.today"
 
 # فیدهای فارسی (بدون نیاز به ترجمه)
 # فیدهای انگلیسی (ترجمه خودکار با GPT-4o-mini)
@@ -24,42 +24,60 @@ feeds:
     language: fa
 
   # --- منابع انگلیسی (ترجمه خودکار) ---
-  - name: The Guardian
-    url: "https://www.theguardian.com/world/middleeast/rss"
-    language: en
   - name: NetBlocks
     url: "https://netblocks.org/feed"
     language: en
+  # Reuters/AP via Google News RSS query feeds (پایدارتر از اسکرپ مستقیم HTML)
+  - name: Reuters (Google News)
+    url: "https://news.google.com/rss/search?q=site%3Areuters.com%20(iran%20OR%20israel%20OR%20middle%20east)&hl=en-US&gl=US&ceid=US%3Aen"
+    language: en
+    fallback_url: "bridges/reuters.xml"
+    fallback_name: "Reuters (Bridge)"
+    fallback_if_older_than_minutes: 120
+  - name: AP News (Google News)
+    url: "https://news.google.com/rss/search?q=site%3Aapnews.com%20(iran%20OR%20israel%20OR%20middle%20east)&hl=en-US&gl=US&ceid=US%3Aen"
+    language: en
+    fallback_url: "bridges/ap-live.xml"
+    fallback_name: "AP Middle East (Bridge)"
+    fallback_if_older_than_minutes: 120
+  - name: Google News Iran
+    url: "https://news.google.com/rss/topics/CAAqIQgKIhtDQkFTRGdvSUwyMHZNRE56YUhBU0FtVnVLQUFQAQ?hl=en-US&gl=US&ceid=US:en"
+    language: en
 
 # منابع غیر RSS که ابتدا به RSS محلی تبدیل می‌شوند.
+# توجه: اسکرپ HTML ذاتا شکننده است و با تغییر ساختار سایت ممکن است نیاز به اصلاح selector داشته باشد.
 bridge_feeds:
   output_dir: "bridges"
   sources:
     - name: Reuters
       slug: "reuters"
+      enabled: true  # در حالت fallback برای Reuters (Google News) استفاده می‌شود
+      include_in_main: false  # فقط fallback؛ به‌صورت فید مستقل وارد build.py نشود
       type: html
-      url: "https://www.reuters.com/world/iran/"
+      url: "https://www.reuters.com/world/middle-east/"
       language: en
       max_items: 40
       selectors:
-        items: 'article[data-testid="StoryCard"]'
-        title: 'a[data-testid="TitleLink"]'
-        link: 'a[data-testid="TitleLink"]'
-        summary: 'p[data-testid="Body"]'
-        date: 'time[data-testid="DateLine"]'
+        items: 'article[data-testid="StoryCard"], li[data-testid="StoryCard"], article'
+        title: 'a[data-testid="TitleLink"], h2 a, h3 a, a'
+        link: 'a[data-testid="TitleLink"], h2 a, h3 a, a[href]'
+        summary: 'p[data-testid="Body"], p'
+        date: 'time[data-testid="DateLine"], time'
 
-    - name: "AP Live"
+    - name: "AP Middle East"
       slug: "ap-live"
+      enabled: true  # در حالت fallback برای AP News (Google News) استفاده می‌شود
+      include_in_main: false  # فقط fallback؛ به‌صورت فید مستقل وارد build.py نشود
       type: html
-      url: "https://apnews.com/live/iran-war-israel-trump-03-14-2026"
+      url: "https://apnews.com/hub/middle-east"
       language: en
       max_items: 60
       selectors:
-        items: 'div[data-key], article, div[class*="LiveBlogPost"]'
-        title: 'h2[class*="LiveBlogPost-heading"], h2'
+        items: 'div.PagePromo, article, div[data-key], div[class*="PagePromo"]'
+        title: 'a[data-key="card-headline"], h2 span, h2, h3 span, h3, a'
         link: 'a[href]'
-        summary: 'p'
-        date: 'span[data-testid="Timestamp"], time'
+        summary: 'div.PagePromo-description, p'
+        date: 'bsp-timestamp, span[data-source="timestamp"], time'
 
     # - name: "Some API"
     #   slug: "some-api"
@@ -142,12 +160,15 @@ fetch:
   max_articles_per_feed: 50
 
 grouper:
-  similarity_threshold: 0.18
+  similarity_threshold: 0.25
   confirmed_min_sources: 3
   secondary_title_threshold: 0.14
   secondary_time_window_hours: 6
+  max_age_hours: 72
+  live_mixed_similarity_threshold: 0.6
+  live_penalty: 0.3
+  source_diversity_bonus_cap: 0.15
 
 output:
   dir: "output"
-  latest_count: 20
-  archive_pages: true
+  latest_count: 12  # سبک‌تر برای اینترنت ضعیف: جدیدترین ۱۲ خبر

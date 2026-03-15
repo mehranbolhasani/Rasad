@@ -10,7 +10,7 @@ set -Eeuo pipefail
 #
 # Optional env vars:
 #   REPO_DIR=/home/rasad/Rasad
-#   SERVE_DIR=/var/www/rasad/output
+#   SERVE_DIR=/home/rasad/Rasad/output
 #   BRANCH=main
 #   REMOTE=origin
 #   CONFIG_PATH=config.yaml
@@ -19,7 +19,7 @@ set -Eeuo pipefail
 #   RELOAD_NGINX=0   # set to 1 to run: sudo systemctl reload nginx
 
 REPO_DIR="${REPO_DIR:-/home/rasad/Rasad}"
-SERVE_DIR="${SERVE_DIR:-/var/www/rasad/output}"
+SERVE_DIR="${SERVE_DIR:-/home/rasad/Rasad/output}"
 BRANCH="${BRANCH:-main}"
 REMOTE="${REMOTE:-origin}"
 CONFIG_PATH="${CONFIG_PATH:-config.yaml}"
@@ -41,7 +41,6 @@ require_cmd() {
 }
 
 require_cmd git
-require_cmd python
 require_cmd rsync
 
 [ -d "$REPO_DIR" ] || fail "Repo directory not found: $REPO_DIR"
@@ -68,6 +67,7 @@ fi
 log "Activating virtualenv"
 # shellcheck disable=SC1091
 source .venv/bin/activate
+require_cmd python
 
 log "Running bridge + site build"
 python bridge_build.py --config "$CONFIG_PATH" --with-build

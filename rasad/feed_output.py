@@ -2,7 +2,7 @@
 تولید فید RSS 2.0 و API متنی JSON برای سایت رصد.
 """
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from xml.etree.ElementTree import Element, SubElement, tostring
 from xml.dom import minidom
@@ -40,7 +40,7 @@ def write_rss(
     SubElement(channel, "description").text = site_description
     SubElement(channel, "link").text = base_url
     SubElement(channel, "language").text = "fa"
-    SubElement(channel, "lastBuildDate").text = datetime.utcnow().strftime(
+    SubElement(channel, "lastBuildDate").text = datetime.now(timezone.utc).strftime(
         "%a, %d %b %Y %H:%M:%S GMT"
     )
 
@@ -80,7 +80,7 @@ def write_json_api(
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     data = {
-        "updated": datetime.utcnow().isoformat() + "Z",
+        "updated": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "stories": [_story_to_json(s) for s in stories[:latest_count]],
     }
     output_path.write_text(

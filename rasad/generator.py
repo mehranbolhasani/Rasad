@@ -2,8 +2,7 @@
 تولید سایت ایستا: قالب‌های Jinja2 به output/.
 تمام صفحات به زبان فارسی و با چیدمان راست‌به‌چپ تولید می‌شوند.
 """
-from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 import shutil
 from typing import Any
@@ -15,11 +14,11 @@ from rasad.models import GroupedStory
 
 LABELS = {
     "site_title": "رصد — اخبار جنگ",
-    "nav_archive": "بایگانی",
-    "label_confirmed": "تأیید شده",
-    "label_reported": "در حال بررسی",
+    "nav_text_full": "دانلود نسخه متنی",
+    "nav_text_compact": "نسخه متنی کم‌حجم",
+    "label_confirmed": "چند منبع تأیید کرده",
+    "label_reported": "تنها یک منبع",
     "label_sources": "منبع",
-    "archive_title": "بایگانی بر اساس تاریخ",
     "footer_no_tracking": "بدون ردیابی. بدون کوکی.",
     "footer_mirror": "آینه‌سازی: wget --mirror --convert-links [آدرس سایت]",
 }
@@ -106,7 +105,8 @@ def _base_context(
         "base_url": base_url.rstrip("/"),
         "last_updated": last_updated,
         "stylesheet_href": stylesheet_href,
-        "nav_archive": labels["nav_archive"],
+        "nav_text_full": labels["nav_text_full"],
+        "nav_text_compact": labels["nav_text_compact"],
         "label_confirmed": labels["label_confirmed"],
         "label_reported": labels["label_reported"],
         "label_sources": labels["label_sources"],
@@ -115,18 +115,15 @@ def _base_context(
     }
 
 
-def _stories_by_date(stories: list[GroupedStory]) -> dict[str, list[GroupedStory]]:
-    by_date: dict[str, list[GroupedStory]] = defaultdict(list)
-    for s in stories:
-        if s.published:
-            key = s.published.strftime("%Y-%m-%d")
-            by_date[key].append(s)
-    for k in by_date:
-        by_date[k].sort(
-            key=lambda x: x.published.timestamp() if x.published else 0,
-            reverse=True,
-        )
-    return dict(by_date)
+def _safe_ts(dt: datetime | None) -> float:
+    if dt is None:
+        return 0.0
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    try:
+        return dt.timestamp()
+    except (AttributeError, OSError):
+        return 0.0
 
 
 def generate(
@@ -136,7 +133,6 @@ def generate(
     static_dir: str | Path,
     site_config: dict[str, Any],
     latest_count: int = 20,
-    archive_pages: bool = True,
 ) -> None:
     output_dir = Path(output_dir)
     templates_dir = Path(templates_dir)
@@ -155,6 +151,18 @@ def generate(
     style_dst = output_dir / "style.css"
     if style_src.exists():
         shutil.copy2(style_src, style_dst)
+    project_root = Path(__file__).resolve().parents[1]
+    favicon_src = project_root / "favicon.ico"
+    if favicon_src.exists():
+        shutil.copy2(favicon_src, output_dir / "favicon.ico")
+    # Archive pages are retired. Remove stale archive directory if present.
+    shutil.rmtree(output_dir / "archive", ignore_errors=True)
+    # Defensive ordering: always render newest stories first on HTML pages.
+    stories = sorted(
+        stories,
+        key=lambda s: _safe_ts(s.published),
+        reverse=True,
+    )
     latest = stories[:latest_count]
 
     # صفحه اصلی
@@ -162,24 +170,3 @@ def generate(
     ctx["stories"] = latest
     html = env.get_template("index.html").render(**ctx)
     output_dir.joinpath("index.html").write_text(html, encoding="utf-8")
-
-    if archive_pages and stories:
-        by_date = _stories_by_date(stories)
-        dates_sorted = sorted(by_date.keys(), reverse=True)
-        archive_dir = output_dir / "archive"
-        archive_dir.mkdir(parents=True, exist_ok=True)
-
-        # فهرست بایگانی
-        ctx_arch = _base_context(base_url, last_updated, "../style.css", site_title)
-        ctx_arch["dates"] = dates_sorted
-        ctx_arch["archive_title"] = LABELS["archive_title"]
-        html_arch = env.get_template("archive_index.html").render(**ctx_arch)
-        archive_dir.joinpath("index.html").write_text(html_arch, encoding="utf-8")
-
-        # صفحات روزانه
-        for date in dates_sorted:
-            ctx_day = _base_context(base_url, last_updated, "../style.css", site_title)
-            ctx_day["date"] = date
-            ctx_day["stories"] = by_date[date]
-            html_day = env.get_template("archive_day.html").render(**ctx_day)
-            archive_dir.joinpath(f"{date}.html").write_text(html_day, encoding="utf-8")

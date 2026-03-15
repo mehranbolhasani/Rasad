@@ -44,6 +44,9 @@ def run_bridges(config: dict[str, Any], project_root: Path, timeout: int = 10) -
     generated_files: list[Path] = []
     for source in bridge_cfg.get("sources") or []:
         source_name = source.get("name", "Unknown source")
+        if source.get("enabled", True) is False:
+            logger.info("Bridge source disabled, skipping: %s", source_name)
+            continue
         source_type = (source.get("type") or "").strip().lower()
         adapter = _pick_adapter(source_type)
         if not adapter:

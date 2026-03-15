@@ -7,6 +7,5 @@
   <p>{{ story.summary }}</p>
   <p><small>{{ label_sources }}: {% for s in story.sources %}<a href="{{ s.url }}" rel="noopener">{{ s.name }}</a>{% if not loop.last %} | {% endif %}{% endfor %}</small></p>
 </article>
-<hr>
 {% endfor %}
 {% endblock %}

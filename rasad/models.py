@@ -15,6 +15,7 @@ class Article:
     source: str
     published: Optional[datetime] = None
     raw_text: str = ""
+    is_live: bool = False
 
 
 @dataclass
