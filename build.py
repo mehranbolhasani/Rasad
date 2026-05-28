@@ -6,6 +6,7 @@
 import argparse
 import json
 import logging
+import re
 import sys
 from pathlib import Path
 
@@ -21,6 +22,7 @@ from rasad.summarizer import summarize_articles
 from rasad.translator import translate_articles
 from rasad.generator import generate
 from rasad.feed_output import write_rss, write_json_api
+from rasad.text_output import write_text_digests
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -29,6 +31,40 @@ logger = logging.getLogger(__name__)
 def load_config(path: str | Path) -> dict:
     with open(path, encoding="utf-8") as f:
         return yaml.safe_load(f) or {}
+
+
+def _slugify(name: str) -> str:
+    value = (name or "").strip().lower()
+    value = re.sub(r"[^a-z0-9]+", "-", value)
+    value = value.strip("-")
+    return value or "source"
+
+
+def _bridge_feed_entries(config: dict, project_root: Path) -> list[dict]:
+    bridge_cfg = config.get("bridge_feeds") or {}
+    output_dir_name = bridge_cfg.get("output_dir", "bridges")
+    bridge_dir = project_root / output_dir_name
+    entries: list[dict] = []
+
+    for source in bridge_cfg.get("sources") or []:
+        if source.get("enabled", True) is False:
+            continue
+        if source.get("include_in_main", True) is False:
+            continue
+        source_name = source.get("name", "Unknown")
+        slug = source.get("slug") or _slugify(source_name)
+        path = bridge_dir / f"{slug}.xml"
+        if not path.exists() or path.stat().st_size < 200:
+            # Skip missing/empty bridge files. Builder will continue with other sources.
+            continue
+        entries.append(
+            {
+                "name": source_name,
+                "url": str(path),
+                "language": source.get("language", "en"),
+            }
+        )
+    return entries
 
 
 def main() -> int:
@@ -49,7 +85,8 @@ def main() -> int:
     templates_dir = project_root / "templates"
     static_dir = project_root / "static"
 
-    feeds = config.get("feeds", [])
+    feeds = list(config.get("feeds", []))
+    feeds.extend(_bridge_feed_entries(config=config, project_root=project_root))
     keywords = config.get("keywords", [])
     filtering_cfg = config.get("filtering", {})
     required_keywords = filtering_cfg.get("required_keywords", [])
@@ -137,6 +174,10 @@ def main() -> int:
             confirmed_min_sources=grouper_cfg.get("confirmed_min_sources", 3),
             secondary_title_threshold=grouper_cfg.get("secondary_title_threshold", 0.14),
             secondary_time_window_hours=grouper_cfg.get("secondary_time_window_hours", 6),
+            max_age_hours=grouper_cfg.get("max_age_hours", 72),
+            live_mixed_similarity_threshold=grouper_cfg.get("live_mixed_similarity_threshold", 0.6),
+            live_penalty=grouper_cfg.get("live_penalty", 0.3),
+            source_diversity_bonus_cap=grouper_cfg.get("source_diversity_bonus_cap", 0.15),
         )
         logger.info("Grouped into %d stories", len(stories))
 
@@ -155,7 +196,6 @@ def main() -> int:
         static_dir=static_dir,
         site_config=site_cfg,
         latest_count=output_cfg.get("latest_count", 20),
-        archive_pages=output_cfg.get("archive_pages", True),
     )
     logger.info("Generated HTML in %s", output_dir)
 
@@ -169,6 +209,12 @@ def main() -> int:
     )
     (output_dir / "api").mkdir(parents=True, exist_ok=True)
     write_json_api(stories, output_dir / "api" / "latest.json", latest_count=50)
+    write_text_digests(
+        stories,
+        output_dir=output_dir,
+        site_title=site_cfg.get("title", "رصد — اخبار جنگ"),
+        latest_count=output_cfg.get("latest_count", 20),
+    )
     logger.info("Generated feed.xml and api/latest.json")
 
     return 0

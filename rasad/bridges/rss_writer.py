@@ -1,7 +1,7 @@
 """
 Write synthetic RSS feeds from normalized Article objects.
 """
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from xml.dom import minidom
 from xml.etree.ElementTree import Element, SubElement, tostring
@@ -39,7 +39,7 @@ def write_articles_rss(
     SubElement(channel, "description").text = feed_description
     SubElement(channel, "link").text = channel_link
     SubElement(channel, "language").text = language
-    SubElement(channel, "lastBuildDate").text = datetime.utcnow().strftime(
+    SubElement(channel, "lastBuildDate").text = datetime.now(timezone.utc).strftime(
         "%a, %d %b %Y %H:%M:%S GMT"
     )
 
