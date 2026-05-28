@@ -19,6 +19,16 @@ logger = logging.getLogger(__name__)
 # Strip HTML tags for raw_text
 TAG_RE = re.compile(r"<[^>]+>")
 
+_ALLOWED_SCHEMES = {"http", "https"}
+
+
+def _is_safe_url(url: str) -> bool:
+    """Allow only http/https links to prevent javascript: etc. in output."""
+    if not url:
+        return False
+    parsed = urlparse(url)
+    return parsed.scheme.lower() in _ALLOWED_SCHEMES
+
 
 def _strip_html(text: str) -> str:
     return TAG_RE.sub(" ", text).strip() if text else ""
@@ -44,6 +54,9 @@ def _normalize_entry(entry: Any, source_name: str, feed: Any) -> Article | None:
     title = (getattr(entry, "title", None) or entry.get("title") or "").strip()
     link = (getattr(entry, "link", None) or entry.get("link") or "").strip()
     if not title or not link:
+        return None
+    if not _is_safe_url(link):
+        logger.debug("Skipping entry with unsafe link: %s", link)
         return None
     summary = getattr(entry, "summary", None) or entry.get("summary") or ""
     raw = _strip_html(summary)
@@ -93,6 +106,8 @@ def _resolve_local_feed_path(url: str) -> Path | None:
 
     # Scheme-less value: treat as a local path when present.
     direct = Path(url).expanduser()
+    if direct.is_absolute():
+        return direct if direct.exists() else None
     if direct.exists():
         return direct
     project_relative = Path(__file__).resolve().parents[1] / url

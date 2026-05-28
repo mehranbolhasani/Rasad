@@ -55,8 +55,9 @@ bridge_feeds:
       language: en
       max_items: 60
       selectors:
-        items: 'div[data-key], article, div[class*="LiveBlogPost"]'
-        title: 'h2[class*="LiveBlogPost-heading"], h2'
+        # Prefer the most specific selector; AP may change DOM over time.
+        items: 'div[class*="LiveBlogPost"]'
+        title: 'h2[class*="LiveBlogPost-heading"]'
         link: 'a[href]'
         summary: 'p'
         date: 'span[data-testid="Timestamp"], time'

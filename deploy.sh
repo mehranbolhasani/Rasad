@@ -26,6 +26,12 @@ case "${1:-}" in
     rm -rf .deploy_ghp
     cp -r "$OUTPUT_DIR" .deploy_ghp
     git checkout gh-pages 2>/dev/null || git checkout --orphan gh-pages
+    current_branch=$(git rev-parse --abbrev-ref HEAD)
+    if [ "$current_branch" != "gh-pages" ]; then
+      echo "Failed to switch to gh-pages branch (current: $current_branch). Aborting."
+      rm -rf .deploy_ghp
+      exit 1
+    fi
     rm -rf *
     mv .deploy_ghp/* .
     rmdir .deploy_ghp

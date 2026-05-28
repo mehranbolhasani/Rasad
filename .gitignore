@@ -1,5 +1,6 @@
 # Rasad
 output/
+bridges/*.xml
 .rasad_cache.json
 translations.json
 *.pyc

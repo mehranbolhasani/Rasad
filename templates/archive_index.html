@@ -3,7 +3,7 @@
 <h2>{{ archive_title }}</h2>
 <ul>
 {% for date in dates %}
-  <li><a href="{{ base_url }}/archive/{{ date }}.html">{{ date }}</a></li>
+  <li><a href="{{ base_url }}/archive/{{ date }}.html">{{ jalali_map[date] }}</a></li>
 {% endfor %}
 </ul>
 {% endblock %}

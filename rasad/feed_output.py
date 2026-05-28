@@ -11,6 +11,11 @@ from rasad.models import GroupedStory
 
 
 def _escape_xml(text: str) -> str:
+    """
+    Escape XML entities for manual text insertion.
+    Not needed for ElementTree nodes (ET handles escaping natively).
+    Kept for backward compatibility in case of raw-string usage.
+    """
     if not text:
         return ""
     return (
@@ -46,8 +51,8 @@ def write_rss(
 
     for story in stories[:50]:
         item = SubElement(channel, "item")
-        SubElement(item, "title").text = _escape_xml(story.headline)
-        SubElement(item, "description").text = _escape_xml(story.summary)
+        SubElement(item, "title").text = story.headline
+        SubElement(item, "description").text = story.summary
         link = story.sources[0].url if story.sources else base_url
         SubElement(item, "link").text = link
         SubElement(item, "guid", isPermaLink="true").text = link

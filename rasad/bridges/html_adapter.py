@@ -10,6 +10,7 @@ from bs4 import BeautifulSoup
 from dateutil import parser as date_parser
 
 from rasad.bridges.base import BaseAdapter
+from rasad.fetcher import _is_safe_url
 from rasad.models import Article
 
 logger = logging.getLogger(__name__)
@@ -93,6 +94,9 @@ class HTMLAdapter(BaseAdapter):
 
             link = urljoin(url, href) if href else ""
             if not title or not link:
+                continue
+            if not _is_safe_url(link):
+                logger.debug("Skipping bridge item with unsafe link: %s", link)
                 continue
 
             published = None

@@ -89,11 +89,22 @@ def _format_last_updated_tehran() -> str:
     return f"آخرین آپدیت: {day_text} {PERSIAN_MONTHS[jm - 1]} {year_text} | {time_text}"
 
 
+def _jalali_from_iso_date(date_str: str) -> str:
+    """Convert 'YYYY-MM-DD' to a Persian Jalali display string."""
+    try:
+        gy, gm, gd = map(int, date_str.split("-"))
+        jy, jm, jd = _gregorian_to_jalali(gy, gm, gd)
+        return f"{_to_persian_digits(str(jd))} {PERSIAN_MONTHS[jm - 1]} {_to_persian_digits(str(jy))}"
+    except (ValueError, IndexError):
+        return date_str
+
+
 def _base_context(
     base_url: str,
     last_updated: str,
     stylesheet_href: str,
     site_title: str | None = None,
+    site_description: str | None = None,
 ) -> dict[str, Any]:
     labels = dict(LABELS)
     if site_title:
@@ -103,6 +114,7 @@ def _base_context(
         "dir": "rtl",
         "title": labels["site_title"],
         "site_title": labels["site_title"],
+        "site_description": site_description or labels["site_title"],
         "base_url": base_url.rstrip("/"),
         "last_updated": last_updated,
         "stylesheet_href": stylesheet_href,
@@ -145,6 +157,7 @@ def generate(
 
     base_url = site_config.get("base_url", "").strip() or "/"
     site_title = site_config.get("title") or LABELS["site_title"]
+    site_description = site_config.get("description") or LABELS["site_title"]
     last_updated = _format_last_updated_tehran()
 
     env = Environment(
@@ -158,7 +171,7 @@ def generate(
     latest = stories[:latest_count]
 
     # صفحه اصلی
-    ctx = _base_context(base_url, last_updated, "style.css", site_title)
+    ctx = _base_context(base_url, last_updated, "style.css", site_title, site_description)
     ctx["stories"] = latest
     html = env.get_template("index.html").render(**ctx)
     output_dir.joinpath("index.html").write_text(html, encoding="utf-8")
@@ -169,17 +182,21 @@ def generate(
         archive_dir = output_dir / "archive"
         archive_dir.mkdir(parents=True, exist_ok=True)
 
+        jalali_map = {d: _jalali_from_iso_date(d) for d in dates_sorted}
+
         # فهرست بایگانی
-        ctx_arch = _base_context(base_url, last_updated, "../style.css", site_title)
+        ctx_arch = _base_context(base_url, last_updated, "../style.css", site_title, site_description)
         ctx_arch["dates"] = dates_sorted
+        ctx_arch["jalali_map"] = jalali_map
         ctx_arch["archive_title"] = LABELS["archive_title"]
         html_arch = env.get_template("archive_index.html").render(**ctx_arch)
         archive_dir.joinpath("index.html").write_text(html_arch, encoding="utf-8")
 
         # صفحات روزانه
         for date in dates_sorted:
-            ctx_day = _base_context(base_url, last_updated, "../style.css", site_title)
+            ctx_day = _base_context(base_url, last_updated, "../style.css", site_title, site_description)
             ctx_day["date"] = date
+            ctx_day["jalali_date"] = jalali_map[date]
             ctx_day["stories"] = by_date[date]
             html_day = env.get_template("archive_day.html").render(**ctx_day)
             archive_dir.joinpath(f"{date}.html").write_text(html_day, encoding="utf-8")

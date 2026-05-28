@@ -16,8 +16,12 @@ logger = logging.getLogger(__name__)
 
 
 def _slugify(name: str) -> str:
+    """Create a filesystem-safe slug from a name. Preserves Persian/Unicode letters."""
     value = (name or "").strip().lower()
-    value = re.sub(r"[^a-z0-9]+", "-", value)
+    # Keep letters (including Persian \u0600-\u06FF), digits, and whitespace
+    value = re.sub(r"[^\w\s\u0600-\u06FF]+", "-", value, flags=re.UNICODE)
+    # Collapse whitespace to hyphens
+    value = re.sub(r"\s+", "-", value)
     value = value.strip("-")
     return value or "source"
 
@@ -33,6 +37,17 @@ def _pick_adapter(source_type: str):
         "json": JSONAdapter(),
     }
     return adapters.get(source_type)
+
+
+def _is_quality_article(article) -> bool:
+    """Reject clearly broken bridge items (empty/short title, title equals link, etc.)."""
+    title = (article.title or "").strip()
+    if len(title) < 5:
+        return False
+    link = (article.link or "").strip()
+    if title == link:
+        return False
+    return True
 
 
 def run_bridges(config: dict[str, Any], project_root: Path, timeout: int = 10) -> list[Path]:
@@ -55,6 +70,12 @@ def run_bridges(config: dict[str, Any], project_root: Path, timeout: int = 10) -
         except Exception as exc:  # defensive barrier per-source
             logger.warning("Bridge adapter failed for %s: %s", source_name, exc)
             continue
+
+        before = len(articles)
+        articles = [a for a in articles if _is_quality_article(a)]
+        after = len(articles)
+        if after < before:
+            logger.info("Bridge quality filter dropped %d low-quality items for %s", before - after, source_name)
 
         slug = source.get("slug") or _slugify(source_name)
         output_path = output_dir / f"{slug}.xml"

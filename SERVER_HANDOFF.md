@@ -98,11 +98,13 @@ CONFIG_PATH="config.yaml" SERVE_DIR="/var/www/rasad/output" ./deploy_server.sh
 
 ## 5) Cron / Automation
 
-Recommended cron (every 15 minutes):
+Recommended cron (every 15 minutes, auto-pulls code before building):
 
 ```bash
-*/15 * * * * cd /home/rasad/Rasad && /home/rasad/Rasad/.venv/bin/python bridge_build.py --config config.yaml --with-build >> /var/log/rasad.log 2>&1
+*/15 * * * * cd /home/rasad/Rasad && git pull --ff-only origin main && /home/rasad/Rasad/.venv/bin/python bridge_build.py --config config.yaml --with-build >> /var/log/rasad.log 2>&1
 ```
+
+> Only use auto-pull if the server working tree is clean (no local edits). For a single-server setup this is the simplest auto-deploy pattern.
 
 Install cron entry:
 

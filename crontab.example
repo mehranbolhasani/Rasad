@@ -1,8 +1,11 @@
 # Rasad — example cron: rebuild site every 15 minutes
 # Install: crontab -e and paste the line below (adjust path and log).
+# Tip: set up logrotate for /var/log/rasad.log so it does not grow unbounded.
+# Note: this auto-pulls code from origin/main. Safe only if the server working tree
+# is clean (no local edits). For a single-server setup this is the simplest pattern.
 
 # Every 15 minutes
-*/15 * * * * cd /path/to/Rasad && .venv/bin/python build.py >> /var/log/rasad.log 2>&1
+*/15 * * * * cd /path/to/Rasad && git pull --ff-only origin main && .venv/bin/python bridge_build.py --config config.yaml --with-build >> /var/log/rasad.log 2>&1
 
 # Or every hour
-# 0 * * * * cd /path/to/Rasad && .venv/bin/python build.py >> /var/log/rasad.log 2>&1
+# 0 * * * * cd /path/to/Rasad && git pull --ff-only origin main && .venv/bin/python bridge_build.py --config config.yaml --with-build >> /var/log/rasad.log 2>&1

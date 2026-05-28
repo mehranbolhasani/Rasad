@@ -8,6 +8,7 @@ import requests
 from dateutil import parser as date_parser
 
 from rasad.bridges.base import BaseAdapter
+from rasad.fetcher import _is_safe_url
 from rasad.models import Article
 
 logger = logging.getLogger(__name__)
@@ -77,6 +78,9 @@ class JSONAdapter(BaseAdapter):
             if not title or not link:
                 continue
             link = urljoin(url, str(link))
+            if not _is_safe_url(link):
+                logger.debug("Skipping bridge JSON item with unsafe link: %s", link)
+                continue
 
             published = None
             if date_raw:

@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>{{ date }}</h2>
+<h2>{{ jalali_date }}</h2>
+<p><small>{{ date }}</small></p>
 {% for story in stories %}
 <article>
   <h3>{{ story.headline }}</h3>

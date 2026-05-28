@@ -211,7 +211,7 @@ def group_articles(
                 unique_sources.append(s)
         published = first.published
         for a in group[1:]:
-            if a.published and (published is None or a.published < published):
+            if a.published and (published is None or a.published > published):
                 published = a.published
         confirmed = len(unique_sources) >= confirmed_min_sources
         stories.append(

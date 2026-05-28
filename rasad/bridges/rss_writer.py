@@ -45,8 +45,8 @@ def write_articles_rss(
 
     for article in articles:
         item = SubElement(channel, "item")
-        SubElement(item, "title").text = _escape_xml(article.title)
-        SubElement(item, "description").text = _escape_xml(article.summary or article.raw_text)
+        SubElement(item, "title").text = article.title
+        SubElement(item, "description").text = article.summary or article.raw_text
         SubElement(item, "link").text = article.link
         SubElement(item, "guid", isPermaLink="true").text = article.link
         if article.published:

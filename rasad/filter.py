@@ -34,9 +34,12 @@ def _matched_keywords(text: str, keywords: list[str]) -> list[str]:
         return []
     lower = text.lower()
     matched: list[str] = []
+    seen_lower: set[str] = set()
     for kw in keywords:
-        if kw and kw.lower() in lower and kw not in matched:
+        lkw = kw.lower()
+        if kw and lkw in lower and lkw not in seen_lower:
             matched.append(kw)
+            seen_lower.add(lkw)
     return matched
 
 

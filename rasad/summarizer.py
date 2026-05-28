@@ -12,8 +12,8 @@ from rasad.models import Article
 logger = logging.getLogger(__name__)
 
 # Sentence boundary: . ! ? followed by space or end
+# Sentence boundary: . ! ? followed by space or end
 SENTENCE_RE = re.compile(r"(?<=[.!?])\s+")
-SPECULATION_MARKERS = ("reportedly", "allegedly", "according to reports", "unconfirmed")
 
 
 def _sentences(text: str) -> list[str]:
