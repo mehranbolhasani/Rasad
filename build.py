@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 خط لوله ساخت رصد:
-  دریافت RSS → فیلتر کلیدواژه → خلاصه‌سازی → ترجمه مقالات انگلیسی → گروه‌بندی → تولید HTML ایستا
+  پل‌ها (اختیاری) → دریافت RSS → فیلتر کلیدواژه → خلاصه‌سازی → ترجمه → گروه‌بندی → تولید خروجی
+One command builds everything.
 """
 import argparse
 import json
@@ -15,6 +16,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+from rasad.bridges.runner import run_bridges_from_config_path
 from rasad.fetcher import fetch_all
 from rasad.filter import filter_articles
 from rasad.grouper import group_articles
@@ -35,7 +37,8 @@ def load_config(path: str | Path) -> dict:
 
 def _slugify(name: str) -> str:
     value = (name or "").strip().lower()
-    value = re.sub(r"[^a-z0-9]+", "-", value)
+    value = re.sub(r"[^\w\s\u0600-\u06FF]+", "-", value, flags=re.UNICODE)
+    value = re.sub(r"\s+", "-", value)
     value = value.strip("-")
     return value or "source"
 
@@ -55,7 +58,6 @@ def _bridge_feed_entries(config: dict, project_root: Path) -> list[dict]:
         slug = source.get("slug") or _slugify(source_name)
         path = bridge_dir / f"{slug}.xml"
         if not path.exists() or path.stat().st_size < 200:
-            # Skip missing/empty bridge files. Builder will continue with other sources.
             continue
         entries.append(
             {
@@ -84,6 +86,11 @@ def main() -> int:
     project_root = Path(__file__).resolve().parent
     templates_dir = project_root / "templates"
     static_dir = project_root / "static"
+
+    # ۰. ساخت پل‌ها (اختیاری)
+    if config.get("bridge_feeds"):
+        logger.info("Building bridge feeds...")
+        run_bridges_from_config_path(config_path=args.config, timeout=10)
 
     feeds = list(config.get("feeds", []))
     feeds.extend(_bridge_feed_entries(config=config, project_root=project_root))
@@ -170,7 +177,7 @@ def main() -> int:
         # ۵. گروه‌بندی
         stories = group_articles(
             articles,
-            similarity_threshold=grouper_cfg.get("similarity_threshold", 0.3),
+            similarity_threshold=grouper_cfg.get("similarity_threshold", 0.25),
             confirmed_min_sources=grouper_cfg.get("confirmed_min_sources", 3),
             secondary_title_threshold=grouper_cfg.get("secondary_title_threshold", 0.14),
             secondary_time_window_hours=grouper_cfg.get("secondary_time_window_hours", 6),
@@ -215,7 +222,7 @@ def main() -> int:
         site_title=site_cfg.get("title", "رصد — اخبار جنگ"),
         latest_count=output_cfg.get("latest_count", 20),
     )
-    logger.info("Generated feed.xml and api/latest.json")
+    logger.info("Generated feed.xml, api/latest.json, and text digests")
 
     return 0
 
