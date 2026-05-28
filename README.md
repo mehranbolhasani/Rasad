@@ -7,7 +7,7 @@ Ultra-lightweight crisis news aggregation for people with limited or unstable in
 - **Target:** Homepage under 50 KB, no images, no heavy JS, no tracking
 - **Stack:** Python, RSS (feedparser), static HTML (Jinja2)
 - **Language:** Farsi (Persian) only — RTL layout
-- **Deploy:** Static only — GitHub Pages, Cloudflare Pages, Netlify, or any static host
+- **Deploy:** Static only — Nginx, GitHub Pages, Cloudflare Pages, or any static host
 
 ## Quick start
 
@@ -56,11 +56,11 @@ Edit `config.yaml` to:
 ## Build pipeline
 
 ```
-fetch RSS → filter by keywords → summarize → translate EN articles to Farsi → group stories → generate static HTML
+fetch RSS → filter by keywords → summarize → translate EN articles to Farsi → group stories → generate static HTML + RSS + text
 ```
 
 ```bash
-python build.py                    # full build
+python build.py                    # full build (bridges + site in one command)
 python build.py --dry-run          # print stories, no HTML
 python build.py --filter-debug     # write filter decisions to output/filter_debug.json
 python build.py --config other.yaml --output ./public
@@ -68,11 +68,28 @@ python build.py --config other.yaml --output ./public
 
 ## Deployment
 
+### Server (VPS + Nginx) — recommended
+
+The `deploy_server.sh` script handles everything:
+
+```bash
+./deploy_server.sh
+```
+
+What it does: pull latest code → build → rsync to web root → verify.
+
+For auto-deploy, install the cron:
+
+```bash
+crontab -e
+# Paste from crontab.example
+```
+
+### Static hosts
+
 - **Artifact:** The `output/` directory is the entire site. Deploy it as-is.
 - **GitHub Pages:** Push `output/` to a `gh-pages` branch.
 - **Cloudflare Pages / Netlify:** Set build command to `python build.py` and publish directory to `output`.
-- **Deploy script:** `./deploy.sh gh-pages` or `RSYNC_DEST=user@host:/path ./deploy.sh rsync`
-- **Cron:** Copy `crontab.example` and adjust the path.
 
 ### Nginx (Cloudflare + static origin)
 
@@ -110,19 +127,22 @@ wget --mirror --convert-links https://your-rasad-site.example.com
 
 ```
 Rasad/
-├── rasad/           # Python package
-│   ├── fetcher.py   # RSS fetching
-│   ├── filter.py    # Keyword filtering
+├── rasad/              # Python package
+│   ├── fetcher.py      # RSS fetching
+│   ├── filter.py       # Keyword filtering
 │   ├── summarizer.py
 │   ├── grouper.py
-│   ├── translator.py  # EN→FA via OpenAI or deep-translator
-│   ├── generator.py
-│   └── feed_output.py
-├── templates/       # Jinja2 HTML templates (Farsi, RTL)
-├── static/          # Minimal CSS (~500 bytes)
-├── config.yaml      # Feeds, keywords, options
-├── build.py         # Entry point
-├── output/          # Generated site (deploy this)
+│   ├── translator.py   # EN→FA via OpenAI
+│   ├── generator.py    # HTML output
+│   ├── feed_output.py  # RSS + JSON API
+│   ├── text_output.py  # Plain text digests
+│   └── bridges/        # Non-RSS adapters
+├── templates/          # Jinja2 HTML templates (Farsi, RTL)
+├── static/             # Minimal CSS
+├── config.yaml         # Feeds, keywords, options
+├── build.py            # Single build command
+├── deploy_server.sh    # Server deploy script
+├── crontab.example     # Cron template
 └── requirements.txt
 ```
 

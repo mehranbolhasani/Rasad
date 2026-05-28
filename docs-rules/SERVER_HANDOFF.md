@@ -54,7 +54,7 @@ Manual full build (bridges + site):
 ```bash
 cd /home/rasad/Rasad
 source .venv/bin/activate
-python bridge_build.py --config config.yaml --with-build
+python build.py --config config.yaml
 ```
 
 Manual deploy using hardened flow:
@@ -101,7 +101,7 @@ CONFIG_PATH="config.yaml" SERVE_DIR="/var/www/rasad/output" ./deploy_server.sh
 Recommended cron (every 15 minutes, auto-pulls code before building):
 
 ```bash
-*/15 * * * * cd /home/rasad/Rasad && git pull --ff-only origin main && /home/rasad/Rasad/.venv/bin/python bridge_build.py --config config.yaml --with-build >> /var/log/rasad.log 2>&1
+*/15 * * * * cd /home/rasad/Rasad && git pull --ff-only origin main && /home/rasad/Rasad/.venv/bin/python build.py --config config.yaml >> /var/log/rasad.log 2>&1
 ```
 
 > Only use auto-pull if the server working tree is clean (no local edits). For a single-server setup this is the simplest auto-deploy pattern.
@@ -144,7 +144,7 @@ Any agent working on server must follow this exact sequence:
 2. `git fetch origin main`
 3. `git pull --ff-only origin main`
 4. `source .venv/bin/activate`
-5. `python bridge_build.py --config config.yaml --with-build`
+  5. `python build.py --config config.yaml`
 6. Verify `output/index.html`, `output/feed.xml`, `output/api/latest.json`
 7. Sync or run `./deploy_server.sh`
 8. Optional live check with `LIVE_URL`
@@ -175,7 +175,7 @@ If a release causes bad content quality, rollback by deploying a known-good git 
 cd /home/rasad/Rasad
 git checkout <KNOWN_GOOD_COMMIT>
 source .venv/bin/activate
-python bridge_build.py --config config.yaml --with-build
+python build.py --config config.yaml
 ./deploy_server.sh
 ```
 
