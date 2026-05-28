@@ -1,5 +1,6 @@
 # Rasad
 output/
+output_size_*/
 bridges/*.xml
 .rasad_cache.json
 translations.json
