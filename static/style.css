@@ -50,8 +50,10 @@ body {
 
 body>.page {
     margin: 0 auto;
-    padding: 1.5rem;
-    max-width: 600px
+    padding: 0;
+    max-width: 480px;
+    border-right: 1px solid var(--line);
+    border-left: 1px solid var(--line);
 }
 
 a {
@@ -63,6 +65,11 @@ a {
 a:visited {
     color: var(--link-visited);
     border-bottom: 1px dotted var(--link-visited)
+}
+
+header {
+    border-bottom: 1px solid var(--line);
+    padding: 1rem;
 }
 
 h1 {
@@ -77,15 +84,14 @@ h1+p {
 
 article {
     padding: 1rem;
-    margin: 0 0 1rem;
-    border-radius: 15px;
+    border-bottom: 1px solid var(--line);
 
     &:nth-of-type(odd) {
-        background: var(--card-odd);
+        background: transparent;
     }
 
     &:nth-of-type(even) {
-        background: var(--card-even);
+        background: lch(from var(--card-even) l c h / 0.6);
     }
 }
 
