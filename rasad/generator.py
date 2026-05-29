@@ -3,6 +3,7 @@
 تمام صفحات به زبان فارسی و با چیدمان راست‌به‌چپ تولید می‌شوند.
 """
 from datetime import datetime, timezone
+import hashlib
 from pathlib import Path
 import shutil
 from typing import Any
@@ -152,8 +153,10 @@ def generate(
     )
     style_src = static_dir / "style.css"
     style_dst = output_dir / "style.css"
+    css_hash = ""
     if style_src.exists():
         shutil.copy2(style_src, style_dst)
+        css_hash = hashlib.sha256(style_src.read_bytes()).hexdigest()[:8]
     project_root = Path(__file__).resolve().parents[1]
     favicon_src = project_root / "favicon.ico"
     if favicon_src.exists():
@@ -168,8 +171,10 @@ def generate(
     )
     latest = stories[:latest_count]
 
+    stylesheet_href = f"style.css?v={css_hash}" if css_hash else "style.css"
+
     # صفحه اصلی
-    ctx = _base_context(base_url, last_updated, "style.css", site_title, site_description)
+    ctx = _base_context(base_url, last_updated, stylesheet_href, site_title, site_description)
     ctx["stories"] = latest
     html = env.get_template("index.html").render(**ctx)
     output_dir.joinpath("index.html").write_text(html, encoding="utf-8")
