@@ -13,14 +13,16 @@
 </head>
 <body>
 <div class="page">
-  <h1>{{ site_title }}</h1>
-  <p><small>{{ last_updated }}</small></p>
-  <nav>
-    <a href="{{ base_url }}/">خانه</a> |
-    <a href="{{ base_url }}/latest.txt">{{ nav_text_full }}</a> |
-    <a href="{{ base_url }}/latest-compact.txt">{{ nav_text_compact }}</a> |
-    <a href="{{ base_url }}/feed.xml">RSS</a>
-  </nav>
+  <header>
+    <h1>{{ site_title }}</h1>
+    <p><small>{{ last_updated }}</small></p>
+    <nav>
+      <a href="{{ base_url }}/">خانه</a> |
+      <a href="{{ base_url }}/latest.txt">{{ nav_text_full }}</a> |
+      <a href="{{ base_url }}/latest-compact.txt">{{ nav_text_compact }}</a> |
+      <a href="{{ base_url }}/feed.xml">RSS</a>
+    </nav>
+  </header>
   {% block content %}{% endblock %}
   <footer>
     <p>{{ footer_no_tracking }}</p>
