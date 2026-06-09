@@ -174,6 +174,12 @@ def _translate_free(text: str) -> str | None:
     try:
         from deep_translator import GoogleTranslator
         return GoogleTranslator(source="en", target="fa").translate(text)
+    except ImportError:
+        logger.warning(
+            "deep-translator is not installed. "
+            "To enable free translation mode run: pip install deep-translator>=1.11.0"
+        )
+        return None
     except Exception as e:
         logger.warning("deep_translator error: %s", e)
     return None

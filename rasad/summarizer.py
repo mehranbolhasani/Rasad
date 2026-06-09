@@ -140,6 +140,7 @@ def summarize_articles(
                 source=art.source,
                 published=art.published,
                 raw_text=art.raw_text,
+                is_live=art.is_live,
             )
         )
     return result

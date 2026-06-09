@@ -7,7 +7,12 @@ import hashlib
 from pathlib import Path
 import shutil
 from typing import Any
-from zoneinfo import ZoneInfo
+try:
+    from zoneinfo import ZoneInfo
+    _TEHRAN_TZ = ZoneInfo("Asia/Tehran")
+except Exception:
+    from datetime import timezone, timedelta
+    _TEHRAN_TZ = timezone(timedelta(hours=3, minutes=30))
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
@@ -77,7 +82,7 @@ def _gregorian_to_jalali(gy: int, gm: int, gd: int) -> tuple[int, int, int]:
 
 
 def _format_last_updated_tehran() -> str:
-    tehran_now = datetime.now(ZoneInfo("Asia/Tehran"))
+    tehran_now = datetime.now(_TEHRAN_TZ)
     jy, jm, jd = _gregorian_to_jalali(
         tehran_now.year,
         tehran_now.month,

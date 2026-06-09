@@ -3,13 +3,18 @@ Generate lightweight plain-text news digests for offline/low-bandwidth use.
 """
 from datetime import datetime, timezone
 from pathlib import Path
-from zoneinfo import ZoneInfo
+try:
+    from zoneinfo import ZoneInfo
+    _TEHRAN_TZ = ZoneInfo("Asia/Tehran")
+except Exception:
+    from datetime import timezone, timedelta
+    _TEHRAN_TZ = timezone(timedelta(hours=3, minutes=30))
 
 from rasad.models import GroupedStory
 
 
 def _fmt_updated_tehran() -> str:
-    now = datetime.now(ZoneInfo("Asia/Tehran"))
+    now = datetime.now(_TEHRAN_TZ)
     return now.strftime("%Y-%m-%d %H:%M")
 
 
