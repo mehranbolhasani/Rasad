@@ -23,7 +23,7 @@ from rasad.grouper import group_articles
 from rasad.summarizer import summarize_articles
 from rasad.translator import translate_articles
 from rasad.generator import generate
-from rasad.feed_output import write_rss, write_json_api
+from rasad.feed_output import write_rss, write_json_api, write_sitemap
 from rasad.text_output import write_text_digests
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
@@ -210,19 +210,23 @@ def main() -> int:
     write_rss(
         stories,
         output_dir / "feed.xml",
-        site_title=site_cfg.get("title", "رصد — اخبار جنگ"),
+        site_title=site_cfg.get("title", "رصد — اخبار بحران ایران"),
         site_description=site_cfg.get("description", "اخبار بحران با حداقل حجم."),
         base_url=site_cfg.get("base_url", "").strip() or "/",
     )
     (output_dir / "api").mkdir(parents=True, exist_ok=True)
     write_json_api(stories, output_dir / "api" / "latest.json", latest_count=50)
+    write_sitemap(
+        output_dir / "sitemap.xml",
+        base_url=site_cfg.get("base_url", "").strip() or "/",
+    )
     write_text_digests(
         stories,
         output_dir=output_dir,
-        site_title=site_cfg.get("title", "رصد — اخبار جنگ"),
+        site_title=site_cfg.get("title", "رصد — اخبار بحران ایران"),
         latest_count=output_cfg.get("latest_count", 20),
     )
-    logger.info("Generated feed.xml, api/latest.json, and text digests")
+    logger.info("Generated feed.xml, api/latest.json, sitemap.xml, and text digests")
 
     return 0
 

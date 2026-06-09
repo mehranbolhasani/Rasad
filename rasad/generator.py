@@ -19,7 +19,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from rasad.models import GroupedStory
 
 LABELS = {
-    "site_title": "رصد — اخبار جنگ",
+    "site_title": "رصد — اخبار بحران ایران",
     "nav_text_full": "دانلود نسخه متنی",
     "nav_text_compact": "نسخه متنی کم‌حجم",
     "label_confirmed": "چند منبع تأیید کرده",

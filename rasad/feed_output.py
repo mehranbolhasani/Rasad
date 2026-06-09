@@ -91,3 +91,37 @@ def write_json_api(
     output_path.write_text(
         json.dumps(data, ensure_ascii=False, indent=0), encoding="utf-8"
     )
+
+
+def write_sitemap(
+    output_path: str | Path,
+    base_url: str,
+) -> None:
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    base_url = base_url.rstrip("/")
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+    urlset = Element(
+        "urlset",
+        xmlns="http://www.sitemaps.org/schemas/sitemap/0.9",
+    )
+
+    pages = [
+        (f"{base_url}/",                    "1.0", "hourly", today),
+        (f"{base_url}/feed.xml",            "0.8", "hourly", today),
+        (f"{base_url}/latest.txt",          "0.6", "hourly", today),
+        (f"{base_url}/latest-compact.txt",  "0.5", "hourly", today),
+    ]
+
+    for loc, priority, changefreq, lastmod in pages:
+        url_el = SubElement(urlset, "url")
+        SubElement(url_el, "loc").text = loc
+        SubElement(url_el, "lastmod").text = lastmod
+        SubElement(url_el, "changefreq").text = changefreq
+        SubElement(url_el, "priority").text = priority
+
+    rough = tostring(urlset, encoding="unicode", default_namespace=None)
+    dom = minidom.parseString(rough)
+    pretty = dom.toprettyxml(indent="  ", encoding="utf-8").decode("utf-8")
+    output_path.write_text(pretty, encoding="utf-8")
