@@ -27,6 +27,7 @@ LABELS = {
     "label_sources": "منبع",
     "footer_no_tracking": "بدون ردیابی. بدون کوکی.",
     "footer_mirror": "آینه‌سازی: wget --mirror --convert-links [آدرس سایت]",
+    "footer_label_note": "«چند منبع» یعنی ۳ یا بیشتر رسانه مستقل همین خبر را گزارش داده‌اند. راستی‌آزمایی محتوا انجام نمی‌شود.",
 }
 
 
@@ -120,6 +121,7 @@ def _base_context(
         "label_sources": labels["label_sources"],
         "footer_no_tracking": labels["footer_no_tracking"],
         "footer_mirror": labels["footer_mirror"],
+        "footer_label_note": labels["footer_label_note"],
     }
 
 

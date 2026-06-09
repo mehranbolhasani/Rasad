@@ -30,6 +30,14 @@ python build.py --config "$CONFIG_PATH"
 mkdir -p "$SERVE_DIR"
 
 # Sync (skip if same dir)
+if [ ! -d "output" ]; then
+  echo "ERROR: output/ directory missing after build — aborting deploy" >&2
+  exit 1
+fi
+if [ ! -d "$SERVE_DIR" ]; then
+  echo "ERROR: SERVE_DIR '$SERVE_DIR' does not exist — aborting deploy" >&2
+  exit 1
+fi
 if [ "$(cd output && pwd -P)" != "$(cd "$SERVE_DIR" && pwd -P)" ]; then
   rsync -av --delete "output/" "$SERVE_DIR/"
 fi

@@ -4,7 +4,7 @@ RSS feed fetching with timeout, retries, and conditional GET (ETag/Last-Modified
 import json
 import logging
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 from urllib.parse import unquote, urlparse
@@ -16,6 +16,8 @@ from dateutil import parser as date_parser
 from rasad.models import Article
 
 logger = logging.getLogger(__name__)
+
+_CACHE_MAX_AGE_DAYS = 7
 
 # Strip HTML tags for raw_text
 TAG_RE = re.compile(r"<[^>]+>")
@@ -60,6 +62,35 @@ def _is_live_story(title: str, link: str) -> bool:
     return "/live/" in (parsed.path or "").lower()
 
 
+def _resolve_google_news_url(url: str, timeout: int = 5) -> str:
+    """
+    Follow Google News redirect URLs to obtain the actual article URL.
+    Uses a HEAD request with redirects enabled. Falls back to the original
+    URL if resolution fails or the resolved URL is still on Google's domain.
+    Only activates for news.google.com URLs; all others pass through unchanged.
+    """
+    if "news.google.com" not in url:
+        return url
+    try:
+        resp = requests.head(
+            url,
+            timeout=timeout,
+            allow_redirects=True,
+            headers={"User-Agent": "Mozilla/5.0 (compatible; RasadBot/1.0)"},
+        )
+        final = resp.url
+        if (
+            final
+            and final != url
+            and _is_safe_url(final)
+            and "news.google.com" not in final
+        ):
+            return final
+    except requests.RequestException:
+        pass
+    return url
+
+
 def _parse_date(entry: Any, feed: Any) -> Any:
     """Parse published/updated date from feed entry; prefer published."""
     for key in ("published", "updated", "created"):
@@ -84,6 +115,7 @@ def _normalize_entry(entry: Any, source_name: str, feed: Any) -> Article | None:
     if not _is_safe_url(link):
         logger.debug("Skipping entry with unsafe link: %s", link)
         return None
+    link = _resolve_google_news_url(link)
     summary = getattr(entry, "summary", None) or entry.get("summary") or ""
     raw = _strip_html(summary)
     # Some feeds put content in content or description
@@ -222,9 +254,36 @@ def _load_cache(cache_path: Path) -> dict[str, dict[str, Any]]:
         return {}
     try:
         with open(cache_path, encoding="utf-8") as f:
-            return json.load(f)
+            data = json.load(f)
     except (json.JSONDecodeError, OSError):
         return {}
+
+    now = datetime.now(timezone.utc)
+    cutoff = now - timedelta(days=_CACHE_MAX_AGE_DAYS)
+    pruned: dict[str, dict[str, Any]] = {}
+    for key, entry in data.items():
+        if not isinstance(entry, dict):
+            continue
+        last_used_str = entry.get("last_used")
+        if last_used_str:
+            try:
+                last_used = date_parser.parse(last_used_str)
+                if last_used.tzinfo is None:
+                    last_used = last_used.replace(tzinfo=timezone.utc)
+                if last_used < cutoff:
+                    continue
+            except (ValueError, TypeError):
+                pass
+        pruned[key] = entry
+
+    dropped = len(data) - len(pruned)
+    if dropped > 0:
+        logger.info(
+            "Cache pruned %d stale entries (older than %d days)",
+            dropped,
+            _CACHE_MAX_AGE_DAYS,
+        )
+    return pruned
 
 
 def _save_cache(cache_path: Path, cache: dict[str, dict[str, Any]]) -> None:
@@ -267,7 +326,8 @@ def fetch_feed(
     Fetch one RSS/Atom feed and return list of Article.
     Uses conditional GET if cache provides etag/last_modified.
     """
-    cache = cache or {}
+    if cache is None:
+        cache = {}
     local_path = _resolve_local_feed_path(url)
     if local_path is not None:
         try:
@@ -301,6 +361,8 @@ def fetch_feed(
 
     if resp.status_code == 304:
         logger.debug("Feed unchanged (304): %s", url)
+        if cache_key and cache_key in cache:
+            cache[cache_key]["last_used"] = datetime.now(timezone.utc).isoformat()
         return _load_cached_articles(
             cache=cache,
             cache_key=cache_key,
@@ -320,6 +382,7 @@ def fetch_feed(
             cache_entry["etag"] = resp.headers["ETag"].strip()
         if resp.headers.get("Last-Modified"):
             cache_entry["last_modified"] = resp.headers["Last-Modified"].strip()
+        cache_entry["last_used"] = datetime.now(timezone.utc).isoformat()
 
     parsed = feedparser.parse(resp.content, response_headers=dict(resp.headers))
     if getattr(parsed, "bozo", False) and not getattr(parsed, "entries", None):
