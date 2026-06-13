@@ -1,7 +1,7 @@
 """
 ترجمه مقالات انگلیسی به فارسی.
 مقالاتی که از فیدهای فارسی آمده‌اند نیاز به ترجمه ندارند.
-حالت‌ها: ai (OpenAI GPT-4o-mini)، free (deep-translator)، none (بدون ترجمه).
+حالت‌ها: ai (OpenAI GPT-4o-mini)، none (بدون ترجمه).
 """
 import logging
 import os
@@ -169,44 +169,21 @@ def _post_edit_persian_openai(title_fa: str, summary_fa: str) -> tuple[str | Non
     return None, None
 
 
-def _translate_free(text: str) -> str | None:
-    """Translate text using deep-translator (free Google Translate, no API key)."""
-    try:
-        from deep_translator import GoogleTranslator
-        return GoogleTranslator(source="en", target="fa").translate(text)
-    except ImportError:
-        logger.warning(
-            "deep-translator is not installed. "
-            "To enable free translation mode run: pip install deep-translator>=1.11.0"
-        )
-        return None
-    except Exception as e:
-        logger.warning("deep_translator error: %s", e)
-    return None
-
-
 def translate_text(text: str, mode: str = "ai") -> str | None:
     """
     Translate a piece of English text to Farsi.
-    Tries the requested mode first, falls back to the other.
     """
     if not text or not text.strip():
         return None
 
     if mode == "ai":
-        result = _translate_openai(text)
-        if result:
-            return result
-        result = _translate_free(text)
-        if result:
-            return result
+        return _translate_openai(text)
     elif mode == "free":
-        result = _translate_free(text)
-        if result:
-            return result
-        result = _translate_openai(text)
-        if result:
-            return result
+        logger.error(
+            "Free translation mode is not available. "
+            "Install deep-translator or use OpenAI mode."
+        )
+        return None
 
     return None
 

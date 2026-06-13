@@ -40,7 +40,6 @@ Core models: `rasad/models.py` (`Article`, `SourceRef`, `GroupedStory`).
 - Virtualenv expected at `.venv` (server scripts assume it).
 - No test runner, no linter, no typechecker, no formatter config exists in the repo.
 - Primary deps: `feedparser`, `requests`, `python-dateutil`, `PyYAML`, `Jinja2`, `python-dotenv`, `beautifulsoup4`, `lxml`, `openai`.
-- Optional: `deep-translator` (free translation fallback).
 
 ## Developer Commands
 
@@ -76,7 +75,7 @@ Top-level keys agents touch most:
 - `bridge_feeds`: non-RSS sources (`type: html` with CSS selectors, or `type: json` with `json_map`)
 - `keywords` / `filtering`: `required_keywords`, `min_matches`
 - `summarization`: `mode` (`extractive` | `ai`), `max_sentences`
-- `translation`: `mode` (`ai` | `free` | `none`), `post_edit`, `post_edit_limit`
+- `translation`: `mode` (`ai` | `none`), `post_edit`, `post_edit_limit`
 - `fetch`: `timeout_seconds`, `cache_file`, `max_articles_per_feed`
 - `grouper`: `similarity_threshold`, `confirmed_min_sources`, `secondary_title_threshold`, `secondary_time_window_hours`
 - `output`: `dir`, `latest_count`
@@ -92,7 +91,6 @@ Rules:
 
 Translation (`rasad/translator.py`):
 
-- Mode ordering and fallback matter: `ai` falls back to `free`; `free` falls back to `ai`.
 - `OPENAI_API_KEY` env var required for AI mode. `OPENAI_MODEL` env var overrides default `gpt-4o-mini`.
 - Post-edit is optional and cost-bounded (`post_edit_limit`).
 - Farsi-feed articles pass through unchanged.
