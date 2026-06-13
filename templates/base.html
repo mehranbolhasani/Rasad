@@ -13,8 +13,54 @@
     <title>{{ title }}</title>
     <link rel="canonical" href="{{ base_url }}/">
     <link rel="icon" href="{{ base_url }}/favicon.ico" type="image/x-icon">
+    <link rel="apple-touch-icon" href="{{ base_url }}/icons/apple-touch-icon.png">
     <link rel="alternate" type="application/rss+xml" title="{{ site_title }}" href="{{ base_url }}/feed.xml">
+    <link rel="manifest" href="{{ base_url }}/manifest.json">
+    <meta name="theme-color" content="#0f0f0f">
     <link rel="stylesheet" href="{{ stylesheet_href }}">
+    <style>
+      #install-prompt {
+        display: none;
+        position: fixed;
+        bottom: 0;
+        right: 0;
+        left: 0;
+        z-index: 1000;
+        background: #0f0f0f;
+        color: #f5f5f5;
+        border-top: 1px solid #333;
+        padding: 0.75rem 1rem;
+        direction: rtl;
+        text-align: right;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      }
+      #install-prompt p {
+        margin: 0 0 0.5rem;
+        font-size: 0.9rem;
+        line-height: 1.5;
+      }
+      #install-prompt .actions {
+        display: flex;
+        gap: 0.5rem;
+      }
+      #install-prompt button {
+        flex: 1;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.9rem;
+        border: none;
+        border-radius: 0.25rem;
+        cursor: pointer;
+      }
+      #install-prompt .confirm {
+        background: #f5f5f5;
+        color: #0f0f0f;
+      }
+      #install-prompt .dismiss {
+        background: transparent;
+        color: #f5f5f5;
+        border: 1px solid #555;
+      }
+    </style>
     </head>
 <body>
 <div class="page">
@@ -35,5 +81,73 @@
     <p>{{ footer_mirror }}</p>
   </footer>
 </div>
+
+<div id="install-prompt" role="dialog" aria-live="polite">
+  <p id="install-text">رصد را به صفحه اصلی اضافه کنید تا بدون اینترنت هم بخوانید.</p>
+  <div class="actions">
+    <button class="confirm" id="install-confirm" type="button">نصب</button>
+    <button class="dismiss" id="install-dismiss" type="button">بعداً</button>
+  </div>
+</div>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+      navigator.serviceWorker.register('/sw.js').catch(function(err) {
+        console.warn('Service worker registration failed:', err);
+      });
+    });
+  }
+</script>
+<script>
+  (function() {
+    var promptEl = document.getElementById('install-prompt');
+    var textEl = document.getElementById('install-text');
+    var confirmBtn = document.getElementById('install-confirm');
+    var dismissBtn = document.getElementById('install-dismiss');
+    var deferredPrompt = null;
+    var storageKey = 'rasad_install_dismissed';
+
+    if (!promptEl) return;
+    if (window.matchMedia('(display-mode: standalone)').matches) return;
+    if (localStorage.getItem(storageKey) === '1') return;
+
+    var ua = navigator.userAgent || '';
+    var isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+    if (isIOS) {
+      textEl.textContent = 'برای نصب، در Safari دکمه اشتراک‌گذاری را بزنید و «افزودن به صفحه اصلی» را انتخاب کنید.';
+      confirmBtn.style.display = 'none';
+      dismissBtn.textContent = 'متوجه شدم';
+      promptEl.style.display = 'block';
+    }
+
+    window.addEventListener('beforeinstallprompt', function(e) {
+      e.preventDefault();
+      deferredPrompt = e;
+      if (localStorage.getItem(storageKey) === '1') return;
+      promptEl.style.display = 'block';
+    });
+
+    function dismiss() {
+      localStorage.setItem(storageKey, '1');
+      promptEl.style.display = 'none';
+    }
+
+    if (dismissBtn) {
+      dismissBtn.addEventListener('click', dismiss);
+    }
+
+    if (confirmBtn) {
+      confirmBtn.addEventListener('click', function() {
+        dismiss();
+        if (deferredPrompt && deferredPrompt.prompt) {
+          deferredPrompt.prompt();
+        }
+      });
+    }
+  })();
+</script>
+
 </body>
 </html>

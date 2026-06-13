@@ -168,6 +168,16 @@ def generate(
     favicon_src = project_root / "favicon.ico"
     if favicon_src.exists():
         shutil.copy2(favicon_src, output_dir / "favicon.ico")
+    # Copy PWA static assets (manifest, icons) to output.
+    manifest_src = static_dir / "manifest.json"
+    if manifest_src.exists():
+        shutil.copy2(manifest_src, output_dir / "manifest.json")
+    icons_src = static_dir / "icons"
+    icons_dst = output_dir / "icons"
+    if icons_src.exists():
+        if icons_dst.exists():
+            shutil.rmtree(icons_dst)
+        shutil.copytree(icons_src, icons_dst)
     # Archive pages are retired. Remove stale archive directory if present.
     shutil.rmtree(output_dir / "archive", ignore_errors=True)
     # Defensive ordering: always render newest stories first on HTML pages.
@@ -185,3 +195,11 @@ def generate(
     ctx["stories"] = latest
     html = env.get_template("index.html").render(**ctx)
     output_dir.joinpath("index.html").write_text(html, encoding="utf-8")
+
+    # Generate service worker with a per-build cache version.
+    sw_src = static_dir / "sw.js"
+    if sw_src.exists():
+        cache_version = datetime.now(_TEHRAN_TZ).strftime("%Y%m%d-%H%M")
+        sw_template = sw_src.read_text(encoding="utf-8")
+        sw_output = sw_template.replace("__CACHE_VERSION__", cache_version)
+        output_dir.joinpath("sw.js").write_text(sw_output, encoding="utf-8")
