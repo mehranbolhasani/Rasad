@@ -106,9 +106,9 @@ h2 {
         margin-top: 0;
         transform: rotate(-90deg);
         width: fit-content;
-        transform-origin: center center;
+        transform-origin: top right;
         position: absolute;
-        right: -50px;
+        right: -5px;
         margin: 0;
         top: 25px;
     }

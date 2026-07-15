@@ -158,6 +158,7 @@ def generate(
         loader=FileSystemLoader(str(templates_dir)),
         autoescape=select_autoescape(("html", "htm")),
     )
+    env.filters["persian_digits"] = lambda value: _to_persian_digits(str(value))
     style_src = static_dir / "style.css"
     style_dst = output_dir / "style.css"
     css_hash = ""

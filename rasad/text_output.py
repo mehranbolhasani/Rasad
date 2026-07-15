@@ -18,8 +18,12 @@ def _fmt_updated_tehran() -> str:
     return now.strftime("%Y-%m-%d %H:%M")
 
 
-def _status_label(confirmed: bool) -> str:
-    return "چند منبع تأیید کرده" if confirmed else "تنها یک منبع"
+def _status_label(story: GroupedStory) -> str:
+    return _to_persian_digits(str(len(story.sources)))
+
+
+def _to_persian_digits(text: str) -> str:
+    return text.translate(str.maketrans("0123456789", "۰۱۲۳۴۵۶۷۸۹"))
 
 
 def _normalize_line(text: str) -> str:
@@ -69,7 +73,7 @@ def write_text_digests(
     for idx, story in enumerate(batch, start=1):
         summary = _normalize_line(story.summary)
         headline = _normalize_line(story.headline)
-        status = _status_label(story.confirmed)
+        status = _status_label(story)
 
         detailed_lines.extend(
             [
