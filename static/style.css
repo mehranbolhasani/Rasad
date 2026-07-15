@@ -132,7 +132,7 @@ article small:not(:has(a)) {
     padding: 2px 7px 5px;
     border-radius: 20px;
     font-size: .7rem;
-    background: #fff;
+    background: var(--card-odd);
     word-spacing: -1px;
 }
 
