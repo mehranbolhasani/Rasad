@@ -19,7 +19,7 @@ def _fmt_updated_tehran() -> str:
 
 
 def _status_label(story: GroupedStory) -> str:
-    return _to_persian_digits(str(len(story.sources)))
+    return f"{_to_persian_digits(str(len(story.sources)))} منبع"
 
 
 def _to_persian_digits(text: str) -> str:
