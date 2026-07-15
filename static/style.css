@@ -5,7 +5,7 @@
     --link: #c05050;
     --link-visited: #c05050;
     --line: #c7c7c7;
-    --card-odd: #f2edec;
+    --card-odd: #fff;
     --card-even: #fefefe;
 }
 
@@ -90,7 +90,7 @@ article {
     position: relative;
 
     &:nth-of-type(odd) {
-        background: #fff;
+        background: var(--card-odd);
     }
 
     &:nth-of-type(even) {
