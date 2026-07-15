@@ -10,6 +10,7 @@ import yaml
 
 from rasad.bridges.html_adapter import HTMLAdapter
 from rasad.bridges.json_adapter import JSONAdapter
+from rasad.bridges.telegram_html_adapter import TelegramHtmlAdapter
 from rasad.bridges.rss_writer import write_articles_rss
 
 logger = logging.getLogger(__name__)
@@ -35,6 +36,7 @@ def _pick_adapter(source_type: str):
     adapters = {
         "html": HTMLAdapter(),
         "json": JSONAdapter(),
+        "telegram_html": TelegramHtmlAdapter(),
     }
     return adapters.get(source_type)
 

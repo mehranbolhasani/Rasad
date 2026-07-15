@@ -55,11 +55,29 @@ def score_text(text: str, keywords: list[str]) -> int:
     return count
 
 
+def _filter_rules_for_article(
+    article: Article,
+    keywords: list[str],
+    required_keywords: list[str],
+    min_matches: int,
+    source_overrides: dict[str, dict] | None,
+) -> tuple[list[str], list[str], int]:
+    override = (source_overrides or {}).get(article.source, {})
+    article_keywords = override.get("keywords", keywords)
+    if "required_keywords" in override:
+        article_required = override.get("required_keywords") or []
+    else:
+        article_required = required_keywords
+    article_min_matches = int(override.get("min_matches", min_matches))
+    return article_keywords, article_required, article_min_matches
+
+
 def filter_articles(
     articles: list[Article],
     keywords: list[str],
     required_keywords: list[str] | None = None,
     min_matches: int = 1,
+    source_overrides: dict[str, dict] | None = None,
     return_debug: bool = False,
 ) -> list[Article] | tuple[list[Article], list[FilterDebugEntry]]:
     """
@@ -92,10 +110,17 @@ def filter_articles(
     debug_rows: list[FilterDebugEntry] = []
     for art in articles:
         combined = f"{art.title} {art.raw_text}"
-        matched_required = _matched_keywords(combined, required_keywords)
+        article_keywords, article_required, article_min_matches = _filter_rules_for_article(
+            art,
+            keywords=keywords,
+            required_keywords=required_keywords,
+            min_matches=min_matches,
+            source_overrides=source_overrides,
+        )
+        matched_required = _matched_keywords(combined, article_required)
         required_score = len(matched_required)
         # Option 3: at least one core keyword must exist
-        if required_keywords and required_score < 1:
+        if article_required and required_score < 1:
             if return_debug:
                 debug_rows.append(
                     FilterDebugEntry(
@@ -111,10 +136,10 @@ def filter_articles(
                     )
                 )
             continue
-        matched_main = _matched_keywords(combined, keywords)
+        matched_main = _matched_keywords(combined, article_keywords)
         s = len(matched_main)
         # Option 1: require a minimum total score
-        if s >= min_matches:
+        if s >= article_min_matches:
             scored.append(ScoredArticle(article=art, score=s))
             if return_debug:
                 debug_rows.append(

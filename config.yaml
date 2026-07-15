@@ -79,6 +79,47 @@ bridge_feeds:
         summary: 'div.PagePromo-description, p'
         date: 'bsp-timestamp, span[data-source="timestamp"], time'
 
+    - name: وحید آنلاین
+      slug: vahid-online
+      enabled: true
+      type: telegram_html
+      channel: VahidOnline
+      language: fa
+      max_items: 40
+      telegram:
+        exclude_patterns:
+          - "^پیام‌های دریافتی"
+          - "^پیام‌‌های دریافتی"
+          - "^ویدیوی دریافتی"
+          - "^تصاویر دریافتی"
+          - "^پیش از پیام"
+          - "^در میان رگبار پیام"
+          - "^ترجمه ماشین"
+          - "^Vahid$"
+          - "^حال وش:"
+        min_text_chars: 80
+
+    - name: روزآروز
+      slug: roozarooz
+      enabled: true
+      type: telegram_html
+      channel: roozArooz_media
+      language: fa
+      max_items: 40
+      telegram:
+        allowed_lead_markers:
+          - "🔴"
+        exclude_patterns:
+          - "سلام و روزتان"
+          - "دیشب که خواب بودید"
+          - "کتاب‌روزآروز"
+          - "roozaroozbook.com"
+          - "لیگ ملت"
+          - "جام جهانی"
+          - "مصادف است با"
+          - "سالگرد"
+        min_text_chars: 40
+
     # - name: "Some API"
     #   slug: "some-api"
     #   type: json
@@ -141,6 +182,15 @@ filtering:
     - IRGC
     - Hormuz
     - Kharg
+
+# فیلتر اختصاصی برای منابعی که از قبل در پل تلگرام غربال شده‌اند.
+source_filters:
+  وحید آنلاین:
+    required_keywords: []
+    min_matches: 2
+  روزآروز:
+    required_keywords: []
+    min_matches: 2
 
 summarization:
   mode: extractive  # extractive | ai

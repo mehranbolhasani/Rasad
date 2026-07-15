@@ -98,6 +98,7 @@ def main() -> int:
     filtering_cfg = config.get("filtering", {})
     required_keywords = filtering_cfg.get("required_keywords", [])
     min_matches = filtering_cfg.get("min_matches", 1)
+    source_filters = config.get("source_filters", {})
     fetch_cfg = config.get("fetch", {})
     summarization_cfg = config.get("summarization", {})
     translation_cfg = config.get("translation", {})
@@ -123,6 +124,7 @@ def main() -> int:
             keywords,
             required_keywords=required_keywords,
             min_matches=min_matches,
+            source_overrides=source_filters,
             return_debug=True,
         )
         debug_report = {
@@ -139,6 +141,7 @@ def main() -> int:
             keywords,
             required_keywords=required_keywords,
             min_matches=min_matches,
+            source_overrides=source_filters,
         )
     logger.info("After keyword filter: %d articles", len(articles))
     if debug_report is not None:
